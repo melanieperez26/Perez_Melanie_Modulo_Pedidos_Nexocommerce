@@ -16,6 +16,10 @@ use App\Http\Controllers\Tienda\ConfiguracionTiendaController;
 use App\Http\Controllers\Usuarios\UsuarioController;
 use Illuminate\Support\Facades\Route;
 
+
+#PARA LA PRACTICA DE ORQUESTACION, SE AGREGAN LAS SIGUIENTES RUTAS
+use App\Http\Controllers\Orquestacion\ResumenPedidoController;
+
 /*
 |--------------------------------------------------------------------------
 | Rutas de API REST - NexoCommerce v1
@@ -164,6 +168,19 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/', [PedidoController::class, 'adminIndex']);
         Route::patch('{id}/estado', [PedidoController::class, 'updateEstado']);
     });
+
+    //PARA LA PRACTICA DE ORQUESTACION, SE AGREGA LA SIGUIENTE RUTA
+    // Práctica 3.3: Orquestación y composición de capacidades
+    // Ruta temporal de laboratorio con datos ficticios.
+    Route::get('laboratorio/resumen-pedido/{id}', [
+        ResumenPedidoController::class,
+        'show',
+    ])->whereNumber('id');
+
+    Route::get('laboratorio/resumen-pedido-parcial/{id}', [
+        ResumenPedidoController::class,
+        'showParcial',
+    ])->whereNumber('id');
 
     // -------------------------------------------------------------------------
     // Modulo 07: Pagos y Comprobantes
