@@ -172,15 +172,17 @@ Route::prefix('v1')->group(function (): void {
     //PARA LA PRACTICA DE ORQUESTACION, SE AGREGA LA SIGUIENTE RUTA
     // Práctica 3.3: Orquestación y composición de capacidades
     // Ruta temporal de laboratorio con datos ficticios.
-    Route::get('laboratorio/resumen-pedido/{id}', [
-        ResumenPedidoController::class,
-        'show',
-    ])->whereNumber('id');
+    Route::middleware(['auth:sanctum', 'rol:ADMIN'])->group(function (): void {
+        Route::get('laboratorio/resumen-pedido/{id}', [
+            ResumenPedidoController::class,
+            'show',
+        ])->whereNumber('id');
 
-    Route::get('laboratorio/resumen-pedido-parcial/{id}', [
-        ResumenPedidoController::class,
-        'showParcial',
-    ])->whereNumber('id');
+        Route::get('laboratorio/resumen-pedido-parcial/{id}', [
+            ResumenPedidoController::class,
+            'showParcial',
+        ])->whereNumber('id');
+    });
 
     // -------------------------------------------------------------------------
     // Modulo 07: Pagos y Comprobantes
