@@ -118,14 +118,53 @@ La ruta de PHP depende del equipo. El pedido `3` es un dato local de prueba y pu
 
 ## 5. Pruebas y evidencias manuales
 
-Los resultados reportados para el laboratorio incluyen:
+Las capturas se revisaron por su contenido y se copiaron con nombres descriptivos. En las copias de publicación se ocultaron el nombre de usuario de RabbitMQ y las rutas locales de Windows. Los archivos originales permanecen locales y no se incluyen en el commit.
 
-- **Mensaje válido:** productor respondió `202 Accepted`; luego el consumidor registró el evento como `PROCESADO`.
-- **Consumidor detenido:** cuatro mensajes quedaron listos en la cola principal y cero sin ACK; al reanudar el consumidor, la cola principal quedó vacía.
-- **Mensaje inválido:** `correlation_id` no válido produjo `422`; un evento inválido entregado al consumidor fue rechazado y llegó a la DLQ.
-- **Correlación e idempotencia:** se verificó la persistencia de `message_id` y `correlation_id`; la tabla de laboratorio mostró cinco procesamientos con cinco identificadores de mensaje únicos.
+### 5.1. Configuración visible de RabbitMQ
 
-Las capturas enviadas en la conversación muestran: respuesta síncrona `200`, estado de las colas en RabbitMQ, conteos de cola por CLI, registro de procesamiento en la base exclusiva de pruebas, respuesta `422` y consulta de registros para el mensaje inválido. Para que aparezcan en el repositorio y en GitHub, guarda las capturas revisadas (sin tokens ni secretos) en `docs/practica-3-1/evidencias/` y enlázalas aquí. Los archivos de imagen no se recibieron como archivos locales, así que no se han inventado ni agregado imágenes ficticias.
+La interfaz muestra la cola durable `pedidos.notificaciones`, con argumento de dead lettering, y la cola durable `pedidos.notificaciones.dlq`. Ambas aparecen activas y vacías en el momento de la captura.
+
+![Colas durable principal y DLQ configuradas en RabbitMQ](evidencias/02-colas-durables-rabbitmq.png)
+
+### 5.2. Publicación válida y HTTP 202
+
+**No hay una captura de las imágenes recibidas que demuestre el `202 Accepted` del productor asíncrono.** La captura titulada originalmente como solicitud válida apunta a `confirmaciones-sincronas` y muestra `200 OK`; se utiliza en la comparación de la sección 6, no como evidencia del productor.
+
+El informe previo registra una publicación asíncrona aceptada y procesada, pero las capturas proporcionadas no permiten comprobar por sí solas esa respuesta `202`. Para completar esta evidencia hace falta una captura de `POST /api/v1/laboratorio/pedidos/{id}/confirmaciones` donde se vea el estado `202` y la respuesta con identificadores, sin mostrar el token.
+
+### 5.3. Mensajes pendientes con el consumidor detenido
+
+La salida de `rabbitmqctl list_queues` muestra **4 mensajes listos y 0 sin ACK** en la cola principal, y **1 mensaje listo** en la DLQ. La captura acredita ese estado de las colas; no muestra directamente el estado del proceso consumidor, por lo que no prueba por sí sola que este estuviera detenido.
+
+![Conteo de mensajes listos y sin ACK en las colas](evidencias/03-cola-con-cuatro-mensajes-pendientes.png)
+
+### 5.4. Ejecución del consumidor y procesamiento
+
+La terminal muestra la invocación del comando Artisan con `--once`, seguida por el conteo de **0 mensajes listos** en la cola principal y **1 en la DLQ**. La misma sesión muestra una consulta de lectura con **1 procesamiento**, **0 registros para el mensaje inválido** y la base `nexocommerce_practica_individual_test`.
+
+![Invocación del consumidor y consultas de verificación posteriores](evidencias/06-consumidor-y-persistencia-postgresql.png)
+
+La captura muestra el comando y los estados posteriores, pero no captura una salida explícita de ACK del consumidor. El registro `PROCESADO` asociado a los identificadores se ve en la evidencia de PostgreSQL siguiente.
+
+### 5.5. Mensaje inválido y respuesta HTTP 422
+
+Postman muestra una solicitud con un `correlation_id` que no es UUID y una respuesta `422 Unprocessable Content`, con el error asociado a `errors.correlation_id`.
+
+![Postman devuelve HTTP 422 para un correlation_id inválido](evidencias/05-validacion-http-422.png)
+
+### 5.6. Correlación por `message_id` y `correlation_id`
+
+La consulta de lectura muestra en la base de pruebas un registro con ambos identificadores, el pedido ficticio, el tipo de evento y resultado `PROCESADO`. Los UUID son identificadores de trazabilidad; no son credenciales.
+
+![Registro procesado con message_id y correlation_id](evidencias/04-correlacion-y-registro-postgresql.png)
+
+### 5.7. Persistencia de resultados en PostgreSQL
+
+La salida muestra que la consulta se realizó contra `nexocommerce_practica_individual_test`, con **1 procesamiento total** y **0 registros para el identificador del mensaje inválido**. La captura de correlación anterior muestra además el registro procesado con resultado `PROCESADO`.
+
+![Verificación de procesamiento y ausencia de registro para el mensaje inválido](evidencias/06-consumidor-y-persistencia-postgresql.png)
+
+La captura de consultas acredita los conteos observados; no demuestra por sí sola el ACK interno del canal AMQP. Tampoco acredita el número total de mensajes únicos de mediciones anteriores, porque la consulta visible se limita a un registro.
 
 ## 6. Comparación de latencia HTTP
 
@@ -139,9 +178,13 @@ Las capturas enviadas en la conversación muestran: respuesta síncrona `200`, e
 
 En esta muestra, la aceptación asíncrona tomó en promedio 130,67 ms más. Esto no demuestra que la arquitectura asíncrona sea más lenta en general: el productor espera una confirmación AMQP, mientras que el endpoint síncrono realiza una validación y consulta locales. No son mediciones equivalentes de extremo a extremo. Se comprobó el procesamiento posterior, pero no se midió su duración exacta desde la publicación.
 
+La captura disponible para el endpoint síncrono muestra `200 OK`, una respuesta de modalidad `sincrona` y un tiempo de respuesta de 577 ms. No corresponde a las tres mediciones agregadas de la tabla y no se usa para recalcularlas.
+
+![Solicitud síncrona de laboratorio con respuesta HTTP 200](evidencias/01-comparacion-sincrona-200.png)
+
 ## 7. Dificultad y solución
 
-Se necesitaba demostrar que las solicitudes podían aceptarse mientras el consumidor estaba detenido y que los mensajes persistían hasta procesarse. Se detuvo el consumidor, se verificaron mensajes pendientes en RabbitMQ, se reanudó el procesamiento y se comprobó el resultado en PostgreSQL. La idempotencia se apoya en la restricción única de `message_id`.
+Se buscaba comprobar que los mensajes quedaran pendientes hasta que el consumidor los atendiera. La captura disponible muestra mensajes listos y sin ACK, y otra captura posterior muestra la cola principal vacía junto con un registro procesado. Las imágenes no muestran directamente el estado detenido del consumidor ni una respuesta `202`; esas limitaciones quedan señaladas arriba. La idempotencia se apoya en la restricción única de `message_id`.
 
 ## 8. Archivos relacionados
 
