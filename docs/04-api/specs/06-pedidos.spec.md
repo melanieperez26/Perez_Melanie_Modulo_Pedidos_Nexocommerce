@@ -1,7 +1,7 @@
 # Modulo 06: Pedidos — Especificacion Tecnica (SDD)
 
-* **Version del contrato:** 1.1.1
-* **Fecha:** 2026-09-24
+* **Version del contrato:** 1.1.2
+* **Fecha:** 2026-11-20
 * **Prefijo base:** `/api/v1/pedidos`
 * **Estado:** Aprobado para implementacion
 * **Fuente de datos:** `pedidos`, `detalles_pedido`
@@ -222,6 +222,31 @@ Salto, retroceso o repeticion de estado: 400 `PED_ESTADO_INVALIDO`. A `EN_PREPAR
 
 ---
 
+### 4.6 Solicitar confirmacion de laboratorio en modalidad sincrona
+* **Metodo:** `POST`
+* **Ruta:** `/api/v1/laboratorio/pedidos/{id}/confirmaciones-sincronas`
+* **Autenticacion:** Sanctum; rol `CLIENTE`
+* **Body opcional:** `correlation_id` UUID.
+
+El CLIENTE debe ser propietario del pedido. La solicitud construye y valida el contrato de confirmacion y consulta el pedido antes de responder. Devuelve `200` una vez completadas la validacion y la consulta. Es una operacion de laboratorio: no publica en RabbitMQ, no registra resultados, no envia notificaciones y no modifica pedidos, pagos, carrito o inventario.
+
+#### 200 OK
+```json
+{
+  "success": true,
+  "data": {
+    "message_id": "e4095617-5fc8-4f0d-a2f1-098cdd367ea1",
+    "correlation_id": "42a29a33-f750-44a0-81e3-50c393afad53",
+    "modalidad": "sincrona",
+    "resultado": "pedido_validado_y_consultado"
+  }
+}
+```
+
+Pedido ajeno: 403. Pedido inexistente: 404. `correlation_id` invalido: 422. La comparacion mide latencia HTTP hasta completar validacion y consulta frente al tiempo de aceptacion del productor (202); no compara finalizacion durable del consumidor.
+
+---
+
 ## 5. Criterios de Aceptacion
 * [x] **TC-01:** POST sin `fecha_entrega`: 422.
 * [x] **TC-02:** POST no acepta `direccion_envio` como campo requerido.
@@ -232,3 +257,4 @@ Salto, retroceso o repeticion de estado: 400 `PED_ESTADO_INVALIDO`. A `EN_PREPAR
 * [x] **TC-07:** Precio cambiado persiste en carrito y requiere reconfirmacion; no crea pedido.
 * [x] **TC-08:** Crear pedido descuenta stock de DETALLE, guarda snapshot y vacia carrito atomicamente.
 * [x] **TC-09:** Dos pedidos concurrentes no exceden stock ni cupo de produccion.
+* [x] **TC-10:** La confirmacion sincrona exige CLIENTE autenticado y propietario del pedido, y no publica ni persiste resultados.

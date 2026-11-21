@@ -5,6 +5,8 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Carrito\CarritoController;
 use App\Http\Controllers\Categorias\CategoriaController;
 use App\Http\Controllers\Multimedia\MultimediaController;
+use App\Http\Controllers\Notificaciones\ConfirmacionPedidoAsincronaController;
+use App\Http\Controllers\Notificaciones\ConfirmacionPedidoSincronaController;
 use App\Http\Controllers\Notificaciones\NotificacionController;
 use App\Http\Controllers\Pagos\PagoController;
 use App\Http\Controllers\Pedidos\PedidoController;
@@ -163,6 +165,14 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/', [PedidoController::class, 'index']);
         Route::post('/', [PedidoController::class, 'store']);
     });
+    Route::middleware(['auth:sanctum', 'rol:CLIENTE'])
+        ->post('laboratorio/pedidos/{id}/confirmaciones', [ConfirmacionPedidoAsincronaController::class, 'store'])
+        ->whereNumber('id')
+        ->name('laboratorio.pedidos.confirmaciones.store');
+    Route::middleware(['auth:sanctum', 'rol:CLIENTE'])
+        ->post('laboratorio/pedidos/{id}/confirmaciones-sincronas', [ConfirmacionPedidoSincronaController::class, 'store'])
+        ->whereNumber('id')
+        ->name('laboratorio.pedidos.confirmaciones.sincronas.store');
     Route::middleware(['auth:sanctum', 'rol:CLIENTE,ADMIN'])->get('pedidos/{id}', [PedidoController::class, 'show']);
     Route::middleware(['auth:sanctum', 'rol:ADMIN'])->prefix('admin/pedidos')->group(function (): void {
         Route::get('/', [PedidoController::class, 'adminIndex']);

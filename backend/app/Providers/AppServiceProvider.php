@@ -7,7 +7,12 @@ namespace App\Providers;
 use App\Aplicacion\Autenticacion\Contratos\NotificacionServiceInterface;
 use App\Aplicacion\Autenticacion\Contratos\TokenServiceInterface;
 use App\Aplicacion\Multimedia\Contratos\AlmacenamientoArchivosInterface;
+use App\Aplicacion\Notificaciones\CasosUso\ProcesarMensajeConfirmacionPedido;
+use App\Aplicacion\Notificaciones\Contratos\ProcesadorConfirmacionPedidoInterface;
+use App\Aplicacion\Notificaciones\Contratos\PublicadorConfirmacionPedidoInterface;
+use App\Aplicacion\Notificaciones\Contratos\RegistroProcesamientoConfirmacionPedidoInterface;
 use App\Aplicacion\Notificaciones\Listeners\CrearAvisos;
+use App\Aplicacion\Notificaciones\Servicios\ManejadorEntregaConfirmacionPedido;
 use App\Dominio\Autenticacion\Repositorios\CuentaOAuthRepositorioInterface;
 use App\Dominio\Autenticacion\Repositorios\UsuarioRepositorioInterface;
 use App\Dominio\Autenticacion\Repositorios\VerificacionCorreoRepositorioInterface;
@@ -37,9 +42,12 @@ use App\Infraestructura\Persistencia\Eloquent\Repositorios\PagoRepositorioEloque
 use App\Infraestructura\Persistencia\Eloquent\Repositorios\PedidoRepositorioEloquent;
 use App\Infraestructura\Persistencia\Eloquent\Repositorios\ProductoRepositorioEloquent;
 use App\Infraestructura\Persistencia\Eloquent\Repositorios\PublicacionRepositorioEloquent;
+use App\Infraestructura\Persistencia\Eloquent\Repositorios\RegistroProcesamientoConfirmacionPedidoEloquent;
 use App\Infraestructura\Persistencia\Eloquent\Repositorios\UsuarioRepositorioEloquent;
 use App\Infraestructura\Persistencia\Eloquent\Repositorios\VerificacionCorreoRepositorioEloquent;
 use App\Infraestructura\Servicios\MailNotificacionService;
+use App\Infraestructura\Servicios\RabbitMqConfirmacionPedidoConsumer;
+use App\Infraestructura\Servicios\RabbitMqConfirmacionPedidoPublisher;
 use App\Infraestructura\Servicios\SanctumTokenService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -54,6 +62,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(CuentaOAuthRepositorioInterface::class, CuentaOAuthRepositorioEloquent::class);
         $this->app->bind(TokenServiceInterface::class, SanctumTokenService::class);
         $this->app->bind(NotificacionServiceInterface::class, MailNotificacionService::class);
+        $this->app->bind(PublicadorConfirmacionPedidoInterface::class, RabbitMqConfirmacionPedidoPublisher::class);
+        $this->app->bind(ProcesadorConfirmacionPedidoInterface::class, ProcesarMensajeConfirmacionPedido::class);
+        $this->app->bind(RegistroProcesamientoConfirmacionPedidoInterface::class, RegistroProcesamientoConfirmacionPedidoEloquent::class);
+        $this->app->bind(RabbitMqConfirmacionPedidoConsumer::class, fn ($app) => new RabbitMqConfirmacionPedidoConsumer(
+            $app->make(ManejadorEntregaConfirmacionPedido::class),
+            config('services.rabbitmq'),
+        ));
 
         // Fase 2: Multimedia
         $this->app->bind(MultimediaRepositorioInterface::class, MultimediaRepositorioEloquent::class);

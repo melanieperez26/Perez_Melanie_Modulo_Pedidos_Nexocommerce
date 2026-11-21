@@ -24,7 +24,7 @@ RUN apt-get update \
         libicu-dev \
         libzip-dev \
         unzip \
-    && docker-php-ext-install -j$(nproc) pdo_pgsql pgsql intl zip bcmath opcache \
+    && docker-php-ext-install -j$(nproc) pdo_pgsql pgsql intl zip bcmath sockets opcache \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

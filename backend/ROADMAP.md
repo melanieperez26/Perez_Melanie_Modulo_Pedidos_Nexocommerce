@@ -359,6 +359,17 @@ Dependencias: Todas las anteriores
 
 ---
 
+## PRACTICA INDIVIDUAL 3.1: Flujo asincrono de confirmaciones
+
+  Estado: Etapas 3 y 4 y endpoint de comparacion sincrona implementados; medicion de tiempos pendiente.
+
+- [x] Crear `POST /api/v1/laboratorio/pedidos/{id}/confirmaciones` para CLIENTE, validando propiedad del pedido y `correlation_id` (Completado: 2026-11-20 21:08; publisher confirm, mensaje persistente y pruebas HTTP sin base de datos)
+  - [x] Implementar consumidor Artisan, persistencia de resultados, DLQ e idempotencia (Etapa 4; 8 pruebas unitarias, 23 aserciones, sin broker ni base de datos)
+  - [x] Crear endpoint de laboratorio sincrono con validacion compartida y consulta de propietario, sin RabbitMQ ni escrituras
+  - [ ] Medir al menos tres solicitudes por modalidad en Postman y documentar las diferencias de alcance
+
+---
+
 ## Mapa rapido spec → fase
 
 | Spec | Fase |

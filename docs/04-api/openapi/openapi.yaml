@@ -518,6 +518,29 @@ paths:
         '200': { description: Pedido con snapshot de detalles y pago mas reciente o null; CLIENTE propio o ADMIN cualquiera }
         '403': { description: Pedido de otro CLIENTE }
 
+  /laboratorio/pedidos/{id}/confirmaciones-sincronas:
+    post:
+      tags: [Pedidos]
+      summary: Valida y consulta un pedido en modalidad sincrona de laboratorio
+      description: CLIENTE propietario. No publica mensajes ni persiste resultados; responde cuando terminan la validacion del contrato y la consulta del pedido.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                correlation_id: { type: string, format: uuid }
+      responses:
+        '200': { description: Contrato validado y pedido consultado en la solicitud HTTP }
+        '401': { description: No autenticado }
+        '403': { description: Rol no permitido o pedido ajeno }
+        '404': { description: Pedido inexistente }
+        '422': { description: correlation_id invalido }
+
   /admin/pedidos:
     get:
       tags: [Pedidos]

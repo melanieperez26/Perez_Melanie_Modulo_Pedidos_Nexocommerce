@@ -1,0 +1,57 @@
+{
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "pedidos.notificaciones.dlx",
+      "vhost": "/",
+      "type": "direct",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "queues": [
+    {
+      "name": "pedidos.notificaciones",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    },
+    {
+      "name": "pedidos.notificaciones.dlq",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "pedidos.notificaciones.dlx",
+      "vhost": "/",
+      "destination": "pedidos.notificaciones.dlq",
+      "destination_type": "queue",
+      "routing_key": "pedidos.notificaciones.dlq",
+      "arguments": {}
+    }
+  ],
+  "policies": [
+    {
+      "vhost": "/",
+      "name": "pedidos.notificaciones.dead-letter",
+      "pattern": "^pedidos\\.notificaciones$",
+      "apply-to": "queues",
+      "definition": {
+        "dead-letter-exchange": "pedidos.notificaciones.dlx",
+        "dead-letter-routing-key": "pedidos.notificaciones.dlq"
+      },
+      "priority": 10
+    }
+  ]
+}
